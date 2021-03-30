@@ -1,14 +1,15 @@
 from flask import Flask, request, redirect, render_template, session, url_for
 import secrets
-import mysql.connector
+from getpass import getpass
+from mysql.connector import connect, Error
 
 app=Flask(__name__)
 app.secret_key=secrets.token_bytes(16)
 
-userdb=mysql.connector.connect(
+userdb=connect(
     host="localhost",
-    user="root",
-    password="root",
+    user=input("Enter username: "),
+    password=getpass("Enter password: "),
     database="assignment6"
 )
 
@@ -36,23 +37,24 @@ def signUp():
     name=request.form["name"]
     account=request.form["account"]
     password=request.form["password"]
-    cursor = userdb.cursor()
-    cursor.execute("SELECT * FROM user WHERE username = %s", (account,))
-    sqlresult=cursor.fetchone()
+    with userdb.cursor() as cursor:
+        cursor.execute("SELECT * FROM user WHERE username = %s", (account,))
+        sqlresult=cursor.fetchone()
     if sqlresult:
         return redirect(url_for("forError", message="帳號已經被註冊"))
     else:
-        cursor.execute("INSERT INTO user (name, username, password) VALUES (%s, %s, %s)", (name, account, password))
-        userdb.commit()
+        with userdb.cursor() as cursor:
+            cursor.execute("INSERT INTO user (name, username, password) VALUES (%s, %s, %s)", (name, account, password))
+            userdb.commit()
         return redirect("/")
 
 @app.route("/signin", methods=["POST"])
 def signIn():
     account=request.form["account"]
     password=request.form["password"]
-    cursor = userdb.cursor()
-    cursor.execute("SELECT * FROM user WHERE username = %s AND password = %s", (account, password))
-    sqlresult=cursor.fetchone()
+    with userdb.cursor() as cursor:
+        cursor.execute("SELECT * FROM user WHERE username = %s AND password = %s", (account, password))
+        sqlresult=cursor.fetchone()
     if sqlresult:
         session["username"]=sqlresult[1]
         return redirect("/member")
