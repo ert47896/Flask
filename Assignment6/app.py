@@ -32,6 +32,13 @@ def forMember():
     else:
         return redirect("/")
 
+@app.route("/success")
+def forSuccess():
+    if "signup" in session:
+        return render_template("success.htm")
+    else:
+        return redirect("/")
+
 @app.route("/signup", methods=["POST"])
 def signUp():
     name=request.form["name"]
@@ -46,7 +53,8 @@ def signUp():
         with userdb.cursor() as cursor:
             cursor.execute("INSERT INTO user (name, username, password) VALUES (%s, %s, %s)", (name, account, password))
             userdb.commit()
-        return redirect("/")
+        session["signup"]=True
+        return redirect("/success")
 
 @app.route("/signin", methods=["POST"])
 def signIn():
@@ -64,6 +72,11 @@ def signIn():
 @app.route("/signout")
 def signOut():
     session.pop("username", None)
+    return redirect("/")
+
+@app.route("/backhome")
+def backHome():
+    session.pop("signup", None)
     return redirect("/")
 
 app.run(port=3000)
