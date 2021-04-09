@@ -122,6 +122,10 @@
             req.send(JSON.stringify({"name":nameinput}));
         })
         changeName=(status, nextname)=>{
+            let mainnode=document.querySelector(".querypart");
+            let showstatus=document.createElement("div");
+            showstatus.id="updatestatus";
+            let oldnode=document.getElementById("updatestatus");
             if (status["ok"]){
                 let oldname=document.getElementById("myname");
                 let newname=document.createElement("span");
@@ -129,22 +133,14 @@
                 newname.id="myname";
                 let parent=document.getElementById("forchange");
                 parent.replaceChild(newname, oldname);
-                let mainnode=document.querySelector(".querypart");
-                let showstatus=document.createElement("div");
-                showstatus.textContent="更新成功";
-                showstatus.id="updatestatus";
-                oldnode=document.getElementById("updatestatus");
+                showstatus.textContent="更新成功";                
                 if (oldnode){
                     mainnode.replaceChild(showstatus, oldnode);
                 } else {
                     mainnode.appendChild(showstatus);
                 }
             } else {
-                let mainnode=document.querySelector(".querypart");
-                let showstatus=document.createElement("div");
                 showstatus.textContent="更新失敗";
-                showstatus.id="updatestatus";
-                oldnode=document.getElementById("updatestatus");
                 if (oldnode){
                     mainnode.replaceChild(showstatus, oldnode);
                 } else {
