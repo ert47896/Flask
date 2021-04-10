@@ -4,7 +4,7 @@ from getpass import getpass
 from mysql.connector import connect
 import json
 
-app=Flask(__name__)
+app=Flask(__name__, static_folder="public", static_url_path="/")
 app.secret_key=secrets.token_bytes(16)
 
 userdb=connect(
