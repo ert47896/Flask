@@ -67,17 +67,26 @@
         querybtn.addEventListener("click", ()=>{
             let searchinput=document.getElementById("username").value;
             let url="http://127.0.0.1:3000/api/users?username="+searchinput;
-            let req=new XMLHttpRequest();
-            req.open("GET", url);
-            req.onload=()=>{
-                dataset=JSON.parse(req.responseText);
-                if (dataset["data"] === "null"){
+            fetch(url).then((response)=>{
+                return response.json()
+            }).then((dataset)=>{
+                if (dataset.data === "null"){
                     noMatch(searchinput);
                 } else {
-                    oneMatch(dataset["data"]);
+                    oneMatch(dataset.data);
                 }
-            }
-            req.send();
+            })
+            // let req=new XMLHttpRequest();
+            // req.open("GET", url);
+            // req.onload=()=>{
+            //     dataset=JSON.parse(req.responseText);
+            //     if (dataset["data"] === "null"){
+            //         noMatch(searchinput);
+            //     } else {
+            //         oneMatch(dataset["data"]);
+            //     }
+            // }
+            // req.send();
         })
         oneMatch=(datas)=>{
             const resultname=datas["name"]
@@ -110,16 +119,28 @@
         /*------------------------------更改姓名----------------------------*/
         let result
         let updatebtn=document.getElementById("update");
+        const changeNameapi="http://127.0.0.1:3000/api/user"
         updatebtn.addEventListener("click", ()=>{
             let nameinput=document.getElementById("name").value;
-            let req=new XMLHttpRequest();
-            req.open("POST", "http://127.0.0.1:3000/api/user");
-            req.setRequestHeader("Content-Type", "application/json");
-            req.onload=()=>{
-                result=JSON.parse(req.responseText);
+            fetch(changeNameapi, {
+                method:"POST",
+                headers:{
+                    "Content-Type": "application/json"
+                },
+                body:JSON.stringify({"name":nameinput})
+            }).then((response)=>{
+                return response.json();
+            }).then((result)=>{
                 changeName(result, nameinput);
-            }
-            req.send(JSON.stringify({"name":nameinput}));
+            })
+            // let req=new XMLHttpRequest();
+            // req.open("POST", "http://127.0.0.1:3000/api/user");
+            // req.setRequestHeader("Content-Type", "application/json");
+            // req.onload=()=>{
+            //     result=JSON.parse(req.responseText);
+            //     changeName(result, nameinput);
+            // }
+            // req.send(JSON.stringify({"name":nameinput}));
         })
         changeName=(status, nextname)=>{
             let mainnode=document.querySelector(".querypart");
