@@ -60,7 +60,7 @@
         <input type="text" id="name" name="name" />
         <button id="update">更新</button>
     </main>
-    <script src="/search_name.js"></script>
-    <script src="/change_name.js"></script>
+    <script src={{ url_for("static", filename="search_name.js") }}></script>
+    <script src={{ url_for("static", filename="change_name.js") }}></script>
 </body>
 </html>

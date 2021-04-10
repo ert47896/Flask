@@ -1,5 +1,4 @@
 /*------------------------------帳號查姓名----------------------------*/
-let dataset;
 let querybtn=document.getElementById("search");
 querybtn.addEventListener("click", ()=>{
     let searchinput=document.getElementById("username").value;

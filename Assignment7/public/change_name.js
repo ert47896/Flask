@@ -1,5 +1,4 @@
 /*------------------------------更改姓名----------------------------*/
-let result
 let updatebtn=document.getElementById("update");
 const changeNameapi="http://127.0.0.1:3000/api/user"
 updatebtn.addEventListener("click", ()=>{
@@ -12,8 +11,8 @@ updatebtn.addEventListener("click", ()=>{
         body:JSON.stringify({"name":nameinput})
     }).then((response)=>{
         return response.json();
-    }).then((result)=>{
-        changeName(result, nameinput);
+    }).then((resultData)=>{
+        changeName(resultData, nameinput);
     })
     // let req=new XMLHttpRequest();
     // req.open("POST", "http://127.0.0.1:3000/api/user");
