@@ -1,7 +1,6 @@
 from flask import Flask, request, redirect, render_template, make_response
 import secrets
 import time
-import json
 
 app=Flask(__name__)
 cookieStatus={}

@@ -2,8 +2,8 @@ from flask import Flask, request, redirect, render_template, url_for, jsonify, m
 import time
 from getpass import getpass
 from mysql.connector import connect
-import json
 import re
+import secrets
 
 app=Flask(__name__, static_folder="public", static_url_path="/")
 
@@ -28,19 +28,18 @@ def forError():
 
 @app.route("/member")
 def forMember():
-    accountStatus=request.cookies.get("username")
-    if accountStatus:
-        return render_template("member.htm", name=accountStatus)
+    sessionid=request.cookies.get("sessionid")
+    with userdb.cursor() as cursor:
+        cursor.execute("SELECT name, sessionid_create_time FROM user WHERE sessionid = %s", (sessionid,))
+        sqlresult=cursor.fetchone()
+    if sqlresult and time.time() < float(sqlresult[1]):
+        return render_template("member.htm", name=sqlresult[0])
     else:
         return redirect("/")
 
 @app.route("/success")
 def forSuccess():
-    signupStatus=request.cookies.get("signup")
-    if signupStatus:
-        return render_template("success.htm")
-    else:
-        return redirect("/")
+    return render_template("success.htm")
 
 @app.route("/signup", methods=["POST"])
 def signUp():
@@ -54,7 +53,7 @@ def signUp():
         if lenAccount >= 4 and lenAccount <= 16 and re.fullmatch(pattern, account):
             if lenPassword >= 4 and lenPassword <= 16 and re.fullmatch(pattern, password):
                 with userdb.cursor() as cursor:
-                    cursor.execute("SELECT * FROM user WHERE username = %s", (account,))
+                    cursor.execute("SELECT username FROM user WHERE username = %s", (account,))
                     sqlresult=cursor.fetchone()
                 if sqlresult:
                     return redirect(url_for("forError", message="帳號已經被註冊"))
@@ -62,9 +61,7 @@ def signUp():
                     with userdb.cursor() as cursor:
                         cursor.execute("INSERT INTO user (name, username, password) VALUES (%s, %s, %s)", (name, account, password))
                         userdb.commit()
-                    respSignup=make_response(redirect("/success"))
-                    respSignup.set_cookie(key="signup", value="Ture", expires=time.time()+10*60, httponly=True, samesite="Strict")
-                    return respSignup
+                    return redirect("/success")
             else:
                 return redirect(url_for("forError", message="密碼請輸入4~16位英數字"))
         else:
@@ -77,31 +74,41 @@ def signIn():
     account=request.form["account"]
     password=request.form["password"]
     with userdb.cursor() as cursor:
-        cursor.execute("SELECT * FROM user WHERE username = %s AND password = %s", (account, password))
+        cursor.execute("SELECT username FROM user WHERE username = %s AND password = %s", (account, password))
         sqlresult=cursor.fetchone()
     if sqlresult:
+        key=secrets.token_hex(16)
+        expiresTime=time.time()+10*60
+        with userdb.cursor() as cursor:
+            cursor.execute("UPDATE user SET sessionid = %s, sessionid_create_time = %s WHERE username = %s", (key, expiresTime, sqlresult[0]))
+            userdb.commit()
         respAccount=make_response(redirect("/member"))
-        respAccount.set_cookie(key="username", value=sqlresult[1], expires=time.time()+10*60, httponly=True, samesite="Strict")
+        respAccount.set_cookie(key="sessionid", value=key, expires=expiresTime, httponly=True, samesite="Strict")
         return respAccount
     else:
         return redirect(url_for("forError", message="帳號或密碼輸入錯誤"))
 
 @app.route("/signout")
 def signOut():
+    sessionid=request.cookies.get("sessionid")
+    with userdb.cursor() as cursor:
+        cursor.execute("UPDATE user SET sessionid = %s, sessionid_create_time = %s WHERE sessionid = %s", (None, None, sessionid))
+        userdb.commit()
     signOutResp=make_response(redirect("/"))
-    signOutResp.set_cookie(key="username", value="", expires=0)
+    signOutResp.set_cookie(key="sessionid", value="", expires=0)
     return signOutResp
 
 @app.route("/backhome")
 def backHome():
-    backHomeResp=make_response(redirect("/"))
-    backHomeResp.set_cookie(key="signup", value="", expires=0)
-    return backHomeResp
+    return redirect("/")
 
 @app.route("/api/users")
 def getData():
-    accountStatus=request.cookies.get("username")
-    if accountStatus:
+    sessionid=request.cookies.get("sessionid")
+    with userdb.cursor() as cursor:
+        cursor.execute("SELECT sessionid, sessionid_create_time FROM user WHERE sessionid = %s", (sessionid,))
+        sqlresult=cursor.fetchone()
+    if sqlresult and time.time() < float(sqlresult[1]):
         account=request.args.get("username")
         if account:
             with userdb.cursor() as cursor:
@@ -120,14 +127,15 @@ def getData():
 def updateData():
     newname=request.json
     if newname["name"]:
-        accountStatus=request.cookies.get("username")
+        sessionid=request.cookies.get("sessionid")
+        with userdb.cursor() as cursor:
+            cursor.execute("SELECT name FROM user WHERE sessionid = %s", (sessionid,))
+            sqlresult=cursor.fetchone()
         try:
             with userdb.cursor() as cursor:
-                cursor.execute("UPDATE user SET name = %s WHERE name = %s", (newname["name"], accountStatus))
+                cursor.execute("UPDATE user SET name = %s WHERE name = %s", (newname["name"], sqlresult[0]))
                 userdb.commit()
-            newresp=make_response(jsonify({"ok":True}))
-            newresp.set_cookie(key="username", value=newname["name"], expires=time.time()+10*60, httponly=True, samesite="Strict")
-            return newresp
+            return jsonify({"ok":True})
         except:
             return jsonify({"error":True})
     else:
