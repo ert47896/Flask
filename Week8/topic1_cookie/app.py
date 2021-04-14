@@ -26,13 +26,13 @@ def signIn():
     account=request.form["account"]
     password=request.form["password"]
     if account=="test" and password=="test":
-        key=secrets.token_hex(16)
+        secretKey=secrets.token_hex(16)
         expiresTime=time.time()+20*60
-        cookieStatus[key]={}
-        cookieStatus[key]["account"]=account
-        cookieStatus[key]["expires_time"]=expiresTime
+        cookieStatus[secretKey]={}
+        cookieStatus[secretKey]["account"]=account
+        cookieStatus[secretKey]["expires_time"]=expiresTime
         resp=make_response(redirect("/member"))
-        resp.set_cookie(key="sessionid", value=key, expires=expiresTime, httponly=True, samesite="Strict")
+        resp.set_cookie(key="sessionid", value=secretKey, expires=expiresTime, httponly=True, samesite="Strict")
         return resp
     else:
         return redirect("/error")

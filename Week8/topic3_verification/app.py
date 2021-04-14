@@ -14,6 +14,13 @@ userdb=connect(
     database="assignment6"
 )
 
+def selectBySessionid(queryitems):
+    sessionid=request.cookies.get("sessionid")
+    with userdb.cursor() as cursor:
+        cursor.execute(queryitems+" FROM user WHERE sessionid = %s", (sessionid,))
+        results=cursor.fetchone()
+        return results
+
 @app.route("/")
 def index():
     return render_template("homepage.htm")
@@ -28,10 +35,8 @@ def forError():
 
 @app.route("/member")
 def forMember():
-    sessionid=request.cookies.get("sessionid")
-    with userdb.cursor() as cursor:
-        cursor.execute("SELECT name, sessionid_create_time FROM user WHERE sessionid = %s", (sessionid,))
-        sqlresult=cursor.fetchone()
+    result = selectBySessionid("SELECT name, sessionid_create_time")
+    sqlresult = result
     if sqlresult and time.time() < float(sqlresult[1]):
         return render_template("member.htm", name=sqlresult[0])
     else:
@@ -77,13 +82,13 @@ def signIn():
         cursor.execute("SELECT username FROM user WHERE username = %s AND password = %s", (account, password))
         sqlresult=cursor.fetchone()
     if sqlresult:
-        key=secrets.token_hex(16)
+        secretkey=secrets.token_hex(16)
         expiresTime=time.time()+10*60
         with userdb.cursor() as cursor:
-            cursor.execute("UPDATE user SET sessionid = %s, sessionid_create_time = %s WHERE username = %s", (key, expiresTime, sqlresult[0]))
+            cursor.execute("UPDATE user SET sessionid = %s, sessionid_create_time = %s WHERE username = %s", (secretkey, expiresTime, sqlresult[0]))
             userdb.commit()
         respAccount=make_response(redirect("/member"))
-        respAccount.set_cookie(key="sessionid", value=key, expires=expiresTime, httponly=True, samesite="Strict")
+        respAccount.set_cookie(key="sessionid", value=secretkey, expires=expiresTime, httponly=True, samesite="Strict")
         return respAccount
     else:
         return redirect(url_for("forError", message="帳號或密碼輸入錯誤"))
@@ -104,10 +109,8 @@ def backHome():
 
 @app.route("/api/users")
 def getData():
-    sessionid=request.cookies.get("sessionid")
-    with userdb.cursor() as cursor:
-        cursor.execute("SELECT sessionid, sessionid_create_time FROM user WHERE sessionid = %s", (sessionid,))
-        sqlresult=cursor.fetchone()
+    result = selectBySessionid("SELECT sessionid, sessionid_create_time")
+    sqlresult = result
     if sqlresult and time.time() < float(sqlresult[1]):
         account=request.args.get("username")
         if account:
@@ -127,10 +130,8 @@ def getData():
 def updateData():
     newname=request.json
     if newname["name"]:
-        sessionid=request.cookies.get("sessionid")
-        with userdb.cursor() as cursor:
-            cursor.execute("SELECT name FROM user WHERE sessionid = %s", (sessionid,))
-            sqlresult=cursor.fetchone()
+        result = selectBySessionid("SELECT name")
+        sqlresult = result
         try:
             with userdb.cursor() as cursor:
                 cursor.execute("UPDATE user SET name = %s WHERE name = %s", (newname["name"], sqlresult[0]))
