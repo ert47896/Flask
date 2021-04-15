@@ -11,8 +11,8 @@ def index():
 
 @app.route("/member")
 def forMember():
-    account=request.cookies.get("sessionid")
-    if account in cookieStatus and time.time() < cookieStatus[account]["expires_time"]:
+    cookieValue=request.cookies.get("sessionid")
+    if cookieValue in cookieStatus and time.time() < cookieStatus[cookieValue]["expires_time"]:
         return render_template("member.html")
     else:
         return redirect("/")
@@ -39,8 +39,8 @@ def signIn():
 
 @app.route("/signout")
 def signOut():
-    account=request.cookies.get("sessionid")
-    cookieStatus.pop(account)
+    cookieValue=request.cookies.get("sessionid")
+    cookieStatus.pop(cookieValue)
     outResp=make_response(redirect("/"))
     outResp.set_cookie(key="sessionid", value="", expires=0)
     return outResp
